@@ -11,6 +11,9 @@ const companySchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  invoiceCounter: { type: Number, default: 1 },
+  invoiceFinancialYear: { type: String }, // e.g., "24-25"
+  invoicePrefix: { type: String, default: "INV" },
 });
 
 const Company = mongoose.model("Company", companySchema);

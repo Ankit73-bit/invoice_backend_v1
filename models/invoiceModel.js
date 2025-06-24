@@ -25,6 +25,11 @@ const itemSchema = new Schema(
 );
 
 const invoiceSchema = new Schema({
+  invoiceNumber: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Company",
