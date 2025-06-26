@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
     required: [true, "A user must have a name!"],
@@ -28,6 +28,7 @@ const userSchema = mongoose.Schema({
     ref: "Company",
     required: true,
   },
+  createdAt: { type: Date, default: Date.now },
 });
 
 userSchema.pre("save", async function (next) {

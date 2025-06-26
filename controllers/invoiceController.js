@@ -1,96 +1,161 @@
 import { getCurrentFinancialYear } from "../helper/services.js";
 import Company from "../models/companyModel.js";
+import Invoice from "../models/invoiceModel.js";
+import APIFeatures from "../utils/apiFeatures.js";
+import AppError from "../utils/appError.js";
+import catchAsync from "../utils/catchAsync.js";
 
-export const createInvoice = async (req, res, next) => {
-  try {
-    const { clientName, clientEmail, items } = req.body;
+export const createInvoice = catchAsync(async (req, res, next) => {
+  const { clientName, clientEmail, items } = req.body;
 
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+  const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
-    // 1. Get the company
-    const targetCompanyId =
-      req.user.role === "admin" && req.body.companyId
-        ? req.body.companyId
-        : req.user.company;
+  // Determine the target company (admin or user)
+  const targetCompanyId =
+    req.user.role === "admin" && req.body.companyId
+      ? req.body.companyId
+      : req.user.company;
 
-    const company = await Company.findById(targetCompanyId);
+  const currentFY = getCurrentFinancialYear();
 
-    if (!company) {
-      return res.status(404).json({ error: "Company not found" });
-    }
-
-    const currentFY = getCurrentFinancialYear();
-
-    if (company.invoiceFinancialYear !== currentFY) {
-      company.invoiceCounter = 1;
-      company.invoiceFinancialYear = currentFY;
-    }
-
-    // 2. Generate invoice number
-    const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
-      company.invoiceCounter
-    ).padStart(3, "0")}`;
-
-    // 3. Create the invoice
-    const invoice = await Invoice.create({
-      company: company._id,
-      clientName,
-      clientEmail,
-      items,
-      totalAmount,
-      invoiceNumber,
-    });
-
-    // 4. Increment the company's invoice counter
-    company.invoiceCounter += 1;
-    await company.save();
-
-    res.status(201).json({
-      status: "success",
-      data: {
-        invoice,
+  // Atomically increment invoiceCounter if same FY, or reset and update
+  const company = await Company.findOneAndUpdate(
+    { _id: targetCompanyId },
+    [
+      {
+        $set: {
+          invoiceCounter: {
+            $cond: {
+              if: { $eq: ["$invoiceFinancialYear", currentFY] },
+              then: { $add: ["$invoiceCounter", 1] },
+              else: 1,
+            },
+          },
+          invoiceFinancialYear: currentFY,
+        },
       },
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create invoice!" });
-    console.log(error);
+    ],
+    { new: true }
+  );
+
+  if (!company) {
+    return next(new AppError("Company not found!", 404));
   }
-};
 
-export const getInvoices = async (req, res) => {
-  try {
-    const invoices = await Invoice.find({ company: req.user.company }).populate(
-      "company"
-    );
+  const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
+    company.invoiceCounter
+  ).padStart(3, "0")}`;
 
-    res.status(200).json({
-      status: "success",
-      results: invoices.length,
-      data: {
-        invoices,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch invoices!" });
-    console.log(error);
+  const invoice = await Invoice.create({
+    company: company._id,
+    clientName,
+    clientEmail,
+    items,
+    totalAmount,
+    invoiceNumber,
+    financialYear: currentFY,
+  });
+
+  res.status(201).json({
+    status: "success",
+    data: { invoice },
+  });
+});
+
+export const getInvoices = catchAsync(async (req, res) => {
+  const features = new APIFeatures(
+    Invoice.find({ company: req.user.company })
+      .populate("client")
+      .populate("consignee")
+      .populate("company"),
+    req.query
+  )
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+
+  const invoices = await features.query;
+
+  res.status(200).json({
+    status: "success",
+    results: invoices.length,
+    data: { invoices },
+  });
+});
+
+export const getAllInvoices = catchAsync(async (req, res, next) => {
+  const { skip, limit } = req.pagination;
+
+  const features = new APIFeatures(
+    Invoice.find().populate("company").populate("client").populate("consignee"),
+    req.query
+  )
+    .filter()
+    .sort()
+    .limitFields();
+
+  const totalCount = await features.query.clone().countDocuments();
+  const invoices = await features.query.skip(skip).limit(limit);
+
+  res.status(200).json({
+    status: "success",
+    results: totalCount,
+    data: invoices,
+  });
+  next();
+});
+
+export const getInvoice = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new AppError(`Invalid invoice ID: ${id}`, 400));
   }
-};
 
-export const getAllInvoices = async (req, res) => {
-  try {
-    const invoices = await Invoice.find()
-      .populate("company")
-      .sort({ createdAt: -1 });
+  const invoice = await Invoice.findById(id)
+    .populate("consignee")
+    .populate("client");
 
-    res.status(200).json({
-      status: "success",
-      results: invoices.length,
-      data: {
-        invoices,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch all invoices!" });
-    console.log(error);
+  if (!invoice) {
+    return next(new AppError("Invoice not found", 404));
   }
-};
+
+  // Calculate payment status
+  const paymentStatus = calculatePaymentStatus(invoice);
+  invoice.paymentStatus = paymentStatus;
+
+  res.status(200).json({
+    status: "success",
+    data: invoice,
+  });
+});
+
+export const updateInvoice = catchAsync(async (req, res, next) => {
+  const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!invoice) {
+    return next(new AppError("Invoice not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: { invoice },
+  });
+});
+
+export const deleteInvoice = catchAsync(async (req, res, next) => {
+  const invoice = await Invoice.findByIdAndDelete(req.params.id);
+
+  if (!invoice) {
+    return next(new AppError("Invoice not found", 404));
+  }
+
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});

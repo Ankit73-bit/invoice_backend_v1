@@ -1,17 +1,28 @@
 import express from "express";
 import {
   createInvoice,
-  getAllInvoices,
   getInvoices,
+  getAllInvoices,
+  getInvoice,
+  updateInvoice,
+  deleteInvoice,
 } from "../controllers/invoiceController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import restrictTo from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-router.use(authMiddleware);
-router.post("/", createInvoice);
-router.get("/", getInvoices);
-router.get("/all", authMiddleware, restrictTo("admin"), getAllInvoices);
+router
+  .route("/")
+  .get(authMiddleware, getInvoices)
+  .post(authMiddleware, createInvoice);
+
+router.route("/admin").get(authMiddleware, restrictTo("admin"), getAllInvoices);
+
+router
+  .route("/:id")
+  .get(authMiddleware, getInvoice)
+  .patch(authMiddleware, updateInvoice)
+  .delete(authMiddleware, deleteInvoice);
 
 export default router;
