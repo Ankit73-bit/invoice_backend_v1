@@ -20,13 +20,17 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["user", "admin", "manager"],
     default: "user",
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Company",
     required: true,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
   },
   createdAt: { type: Date, default: Date.now },
 });

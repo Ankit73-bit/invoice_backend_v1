@@ -20,27 +20,57 @@ export const loginUser = async (req, res, next) => {
       return res.status(401).json({ error: "Invalid credentials!" });
     }
 
+    if (!user.isActive) {
+      return res
+        .status(403)
+        .json({ error: "Your account has been deactivated." });
+    }
+
+    if (!user.company || user.company.isActive === false) {
+      return res
+        .status(403)
+        .json({ error: "Your company has been deactivated." });
+    }
+
     const isMatch = await user.correctPassword(password);
 
     if (!isMatch) {
-      res.status(401).json({ error: "Invalid Credentials!" });
+      return res.status(401).json({ error: "Invalid credentials!" });
     }
 
     const token = generateToken(user._id);
 
-    res.status(200).json({
-      status: "sucess",
-      token,
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        company: user.company,
-      },
-    });
+    res
+      .cookie("jwt", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .status(200)
+      .json({
+        status: "success",
+        token,
+        user: {
+          _id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          company: user.company,
+        },
+      });
   } catch (error) {
     res.status(500).json({ error: "Login failed!" });
-    console.log(error);
+    console.error(error);
   }
+};
+
+export const logoutUser = (req, res) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: true,
+  });
+
+  res.status(200).json({ status: "success", message: "Logged out" });
 };

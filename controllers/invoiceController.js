@@ -1,3 +1,4 @@
+import { calculateInvoiceSummary } from "../helper/calculateInvoiceSummary.js";
 import { getCurrentFinancialYear } from "../helper/services.js";
 import Company from "../models/companyModel.js";
 import Invoice from "../models/invoiceModel.js";
@@ -6,19 +7,26 @@ import AppError from "../utils/appError.js";
 import catchAsync from "../utils/catchAsync.js";
 
 export const createInvoice = catchAsync(async (req, res, next) => {
-  const { clientName, clientEmail, items } = req.body;
+  const {
+    client,
+    consignee,
+    items,
+    gstType,
+    cgstRate,
+    sgstRate,
+    igstRate,
+    fuelSurchargeRate,
+    roundingOff = 0,
+    ...rest
+  } = req.body;
 
-  const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-
-  // Determine the target company (admin or user)
   const targetCompanyId =
-    req.user.role === "admin" && req.body.companyId
-      ? req.body.companyId
+    req.user.role === "admin" && req.body.company
+      ? req.body.company
       : req.user.company;
 
   const currentFY = getCurrentFinancialYear();
 
-  // Atomically increment invoiceCounter if same FY, or reset and update
   const company = await Company.findOneAndUpdate(
     { _id: targetCompanyId },
     [
@@ -38,22 +46,48 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     { new: true }
   );
 
-  if (!company) {
-    return next(new AppError("Company not found!", 404));
+  if (!company || company.isActive === false) {
+    return next(new AppError("Company not found or is inactive", 404));
+  }
+
+  if (!client || !items || items.length === 0) {
+    return next(
+      new AppError("Client and at least one item are required.", 400)
+    );
   }
 
   const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
     company.invoiceCounter
   ).padStart(3, "0")}`;
 
+  const {
+    items: updatedItems,
+    totalBeforeGST,
+    gstDetails,
+    grossAmount,
+  } = calculateInvoiceSummary({
+    items,
+    gstType,
+    cgstRate,
+    sgstRate,
+    igstRate,
+    fuelSurchargeRate,
+    roundingOff,
+  });
+
   const invoice = await Invoice.create({
     company: company._id,
-    clientName,
-    clientEmail,
-    items,
-    totalAmount,
+    companyBankDetails: company.companyBankDetails,
+    client,
+    consignee,
+    items: updatedItems,
     invoiceNumber,
     financialYear: currentFY,
+    totalBeforeGST,
+    gstDetails,
+    roundingOff,
+    grossAmount,
+    ...rest,
   });
 
   res.status(201).json({

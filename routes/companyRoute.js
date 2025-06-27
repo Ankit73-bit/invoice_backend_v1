@@ -6,7 +6,8 @@ import {
   getCompanyById,
   createCompany,
   updateCompany,
-  deleteCompany,
+  deactivateCompany,
+  reactivateCompany,
 } from "../controllers/companyController.js";
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.get("/", getAllCompanies);
 router.get("/:id", getCompanyById);
 router.post("/", createCompany);
 router.patch("/:id", updateCompany);
-router.delete("/:id", deleteCompany);
+router.patch("/:id/deactivate", deactivateCompany);
+router.patch("/:id/reactivate", reactivateCompany);
 
 export default router;

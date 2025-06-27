@@ -1,4 +1,15 @@
 import mongoose from "mongoose";
+import addressSchema from "./adderssSchema.js";
+
+const BankDetailsSchema = new mongoose.Schema(
+  {
+    bankName: String,
+    accNo: String,
+    ifsc: String,
+    branchName: String,
+  },
+  { _id: false }
+);
 
 const companySchema = new mongoose.Schema({
   companyName: {
@@ -7,14 +18,21 @@ const companySchema = new mongoose.Schema({
     trim: true,
     unique: true,
   },
+  address: addressSchema,
   allowManualItemTotals: {
     type: Boolean,
     default: false,
   },
-  invoiceCounter: { type: Number, default: 1 },
+  companyBankDetails: BankDetailsSchema,
+  invoiceCounter: { type: Number, default: 0 },
   invoiceFinancialYear: { type: String }, // e.g., "24-25"
   invoicePrefix: { type: String, default: "INV" },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
   createdAt: { type: Date, default: Date.now },
+  deactivatedAt: Date,
 });
 
 const Company = mongoose.model("Company", companySchema);

@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(authMiddleware, restrictTo("admin"));
 
-router.get("/", getAllUsers);
-router.get("/:id", getUserById);
-router.post("/", createUserByAdmin);
-router.patch("/:id", updateUser);
-router.delete("/:id", deleteUser);
+router.get("/admin/all-users", getAllUsers);
+router.get("admin/get-user/:id", getUserById);
+router.post("/admin/create-user", createUserByAdmin);
+router.patch("/admin/update-user/:id", updateUser);
+router.delete("/admin/delete-user/:id", deleteUser);
 
 export default router;

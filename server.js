@@ -7,10 +7,10 @@ import userRoutes from "./routes/userRoute.js";
 import analyticsRoutes from "./routes/analyticsRoute.js";
 import consigneeRoutes from "./routes/consigneeRoute.js";
 import clientRoutes from "./routes/clientRoute.js";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const app = express();
-
-app.use(express.json());
 
 app.use(
   cors({
@@ -18,6 +18,10 @@ app.use(
     credentials: true, // if using cookies/auth headers
   })
 );
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/companies", compnayRoutes);
