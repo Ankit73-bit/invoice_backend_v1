@@ -12,10 +12,11 @@ import {
 
 const router = express.Router();
 
-router.use(authMiddleware, restrictTo("admin")); // admin-only access
-
 router.get("/", getAllCompanies);
 router.get("/:id", getCompanyById);
+
+router.use(authMiddleware, restrictTo("admin")); // admin-only access
+
 router.post("/", createCompany);
 router.patch("/:id", updateCompany);
 router.patch("/:id/deactivate", deactivateCompany);
