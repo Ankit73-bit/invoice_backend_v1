@@ -4,12 +4,15 @@ export const createUser = async (req, res, next) => {
   try {
     const { fullName, email, password, company } = req.body;
 
-    const user = await User.create({
+    const newUser = await User.create({
       fullName,
       email,
       password,
       company,
     });
+
+    // re-fetch with populated company
+    const user = await User.findById(newUser._id).populate("company");
 
     res.status(201).json({
       status: "success",
