@@ -1,12 +1,17 @@
 import Client from "../models/clientModel.js";
 
-export const getAllClients = async (req, res) => {
-  const filter =
-    req.user.role === "admin" && req.query.companyId
-      ? { company: req.query.companyId }
-      : { company: req.user.company };
+// export const getAllClients = async (req, res) => {
+//   const filter =
+//     req.user.role === "admin" && req.query.companyId
+//       ? { company: req.query.companyId }
+//       : { company: req.user.company };
 
-  const clients = await Client.find(filter);
+//   const clients = await Client.find(filter);
+//   res.status(200).json({ status: "success", data: clients });
+// };
+
+export const getAllClients = async (req, res) => {
+  const clients = await Client.find();
   res.status(200).json({ status: "success", data: clients });
 };
 
@@ -19,7 +24,15 @@ export const getClientById = async (req, res) => {
 export const createClient = async (req, res) => {
   const company =
     req.user.role === "admin" ? req.body.company : req.user.company;
+
+  if (!company) {
+    return res
+      .status(400)
+      .json({ error: "Company ID is required to create a client." });
+  }
+
   const client = await Client.create({ ...req.body, company });
+
   res.status(201).json({ status: "success", data: client });
 };
 
