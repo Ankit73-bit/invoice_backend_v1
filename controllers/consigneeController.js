@@ -6,7 +6,10 @@ export const getAllConsignees = async (req, res) => {
       ? { company: req.query.companyId }
       : { company: req.user.company };
 
-  const consignees = await Consignee.find(filter);
+  const consignees = await Consignee.find(filter).populate(
+    "company",
+    "companyName"
+  );
   res.status(200).json({ status: "success", data: consignees });
 };
 

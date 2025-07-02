@@ -11,7 +11,12 @@ import Client from "../models/clientModel.js";
 // };
 
 export const getAllClients = async (req, res) => {
-  const clients = await Client.find();
+  const filter =
+    req.user.role === "admin" && req.query.companyId
+      ? { company: req.query.companyId }
+      : { company: req.user.company };
+
+  const clients = await Client.find(filter).populate("company", "companyName");
   res.status(200).json({ status: "success", data: clients });
 };
 
