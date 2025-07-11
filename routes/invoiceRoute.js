@@ -6,6 +6,7 @@ import {
   getInvoice,
   updateInvoice,
   deleteInvoice,
+  getNextInvoiceNumber,
 } from "../controllers/invoiceController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import restrictTo from "../middleware/roleMiddleware.js";
@@ -18,7 +19,7 @@ router
   .post(authMiddleware, createInvoice);
 
 router.route("/admin").get(authMiddleware, restrictTo("admin"), getAllInvoices);
-
+router.get("/next-invoice-number", authMiddleware, getNextInvoiceNumber);
 router
   .route("/:id")
   .get(authMiddleware, getInvoice)

@@ -19,6 +19,11 @@ const companySchema = new mongoose.Schema({
     unique: true,
   },
   address: addressSchema,
+  email: {
+    type: String,
+    unique: true,
+  },
+  contact: Number,
   allowManualItemTotals: {
     type: Boolean,
     default: false,

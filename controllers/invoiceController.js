@@ -1,10 +1,12 @@
 import { calculateInvoiceSummary } from "../helper/calculateInvoiceSummary.js";
+import { convertToWords } from "../helper/convertToWords.js";
 import { getCurrentFinancialYear } from "../helper/services.js";
 import Company from "../models/companyModel.js";
 import Invoice from "../models/invoiceModel.js";
 import APIFeatures from "../utils/apiFeatures.js";
 import AppError from "../utils/appError.js";
 import catchAsync from "../utils/catchAsync.js";
+import mongoose from "mongoose";
 
 export const createInvoice = catchAsync(async (req, res, next) => {
   const {
@@ -75,6 +77,8 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     roundingOff,
   });
 
+  const amountInWords = convertToWords(grossAmount);
+
   const invoice = await Invoice.create({
     company: company._id,
     companyBankDetails: company.companyBankDetails,
@@ -87,6 +91,7 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     gstDetails,
     roundingOff,
     grossAmount,
+    inWords: amountInWords,
     ...rest,
   });
 
@@ -95,6 +100,33 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     data: { invoice },
   });
 });
+
+export const getNextInvoiceNumber = async (req, res) => {
+  try {
+    const targetCompanyId =
+      req.user.role === "admin" && req.query.companyId
+        ? req.query.companyId
+        : req.user.company;
+
+    const company = await Company.findById(targetCompanyId);
+    if (!company) return res.status(404).json({ error: "Company not found" });
+
+    const currentFY = getCurrentFinancialYear();
+    const counter =
+      company.invoiceFinancialYear === currentFY
+        ? company.invoiceCounter + 1
+        : 1;
+
+    const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
+      counter
+    ).padStart(3, "0")}`;
+
+    return res.status(200).json({ invoiceNumber });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to fetch invoice number" });
+  }
+};
 
 export const getInvoices = catchAsync(async (req, res) => {
   const features = new APIFeatures(
