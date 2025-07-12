@@ -58,7 +58,7 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     );
   }
 
-  const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
+  const invoiceNumber = `${company.invoicePrefix}/${currentFY}/${String(
     company.invoiceCounter
   ).padStart(3, "0")}`;
 
@@ -117,7 +117,7 @@ export const getNextInvoiceNumber = async (req, res) => {
         ? company.invoiceCounter + 1
         : 1;
 
-    const invoiceNumber = `${company.invoicePrefix}-${currentFY}/${String(
+    const invoiceNumber = `${company.invoicePrefix}/${currentFY}/${String(
       counter
     ).padStart(3, "0")}`;
 
