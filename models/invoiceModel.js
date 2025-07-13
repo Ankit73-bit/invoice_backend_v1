@@ -90,7 +90,6 @@ const invoiceSchema = new mongoose.Schema({
     hrCode: { type: String },
     hrName: { type: String },
   },
-  bankDetails: Object,
   totalBeforeGST: Number,
   gstDetails: gstSchema,
   note: { type: String },
