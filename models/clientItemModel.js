@@ -32,7 +32,7 @@ const clientItemSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    companyId: {
+    company: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",
       required: true,
@@ -44,7 +44,7 @@ const clientItemSchema = new mongoose.Schema(
 );
 
 // Index for efficient queries
-clientItemSchema.index({ clientId: 1, companyId: 1 });
+clientItemSchema.index({ clientId: 1, company: 1 });
 
 const ClientItem = mongoose.model("ClientItem", clientItemSchema);
 

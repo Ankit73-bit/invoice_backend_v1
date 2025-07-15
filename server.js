@@ -7,8 +7,7 @@ import userRoutes from "./routes/userRoute.js";
 import analyticsRoutes from "./routes/analyticsRoute.js";
 import consigneeRoutes from "./routes/consigneeRoute.js";
 import clientRoutes from "./routes/clientRoute.js";
-import clientItems from "./routes/clientItemRoute.js";
-
+import clientItemRoutes from "./routes/clientItemRoute.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
@@ -32,7 +31,7 @@ app.use("/api/consignees", consigneeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/client-items", clientItems);
+app.use("/api/client-items", clientItemRoutes);
 
 const PORT = process.env.PORT || 3000;
 

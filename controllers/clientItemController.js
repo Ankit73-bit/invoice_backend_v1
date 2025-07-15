@@ -78,20 +78,13 @@ export const getAllClientItems = async (req, res) => {
 // Create a new client item
 export const createClientItem = async (req, res) => {
   try {
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-      });
-    }
-
-    const { clientId, description, unitPrice, hsnCode } = req.body;
-    const { companyId, _id: userId } = req.user;
+    const { clientId, description, unitPrice, hsnCode, company } = req.body;
+    const { _id: userId } = req.user;
 
     // Check if item with same description already exists for this client
     const existingItem = await ClientItem.findOne({
       clientId,
-      companyId,
+      company,
       description: { $regex: new RegExp(`^${description}$`, "i") },
       isActive: true,
     });
@@ -108,7 +101,7 @@ export const createClientItem = async (req, res) => {
       description,
       unitPrice,
       hsnCode,
-      companyId,
+      company,
       createdBy: userId,
     });
 
@@ -133,13 +126,6 @@ export const createClientItem = async (req, res) => {
 // Update a client item
 export const updateClientItem = async (req, res) => {
   try {
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-      });
-    }
-
     const { id } = req.params;
     const { description, unitPrice, hsnCode } = req.body;
     const { companyId } = req.user;
