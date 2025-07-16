@@ -102,6 +102,11 @@ const invoiceSchema = new mongoose.Schema({
     enum: ["Pending", "Paid", "Overdue"],
     default: "Pending",
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

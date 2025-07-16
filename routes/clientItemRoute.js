@@ -16,7 +16,7 @@ router.use(authMiddleware); // all routes require login
 router.get("/all", getAllClientItems);
 router.get("/client/:clientId", getClientItems);
 router.post("/", createClientItem);
-router.put("/:id", updateClientItem);
+router.patch("/:id", updateClientItem);
 router.delete("/:id", deleteClientItem);
 
 export default router;

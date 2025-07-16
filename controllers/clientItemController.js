@@ -183,16 +183,13 @@ export const updateClientItem = async (req, res) => {
   }
 };
 
-// Delete a client item (soft delete)
 export const deleteClientItem = async (req, res) => {
   try {
     const { id } = req.params;
     const { companyId } = req.user;
 
-    const clientItem = await ClientItem.findOne({
+    const clientItem = await ClientItem.findOneAndDelete({
       _id: id,
-      companyId,
-      isActive: true,
     });
 
     if (!clientItem) {
@@ -201,9 +198,6 @@ export const deleteClientItem = async (req, res) => {
         message: "Client item not found",
       });
     }
-
-    clientItem.isActive = false;
-    await clientItem.save();
 
     res.json({
       success: true,
