@@ -52,6 +52,7 @@ const gstSchema = new mongoose.Schema(
     igst: { type: Number },
     fuelSurchargeRate: { type: Number },
     fuelSurcharge: { type: Number },
+    totalGstAmount: { type: Number },
     totalAmount: { type: Number },
   },
   { _id: false }
@@ -90,6 +91,7 @@ const invoiceSchema = new mongoose.Schema({
     hrCode: { type: String },
     hrName: { type: String },
   },
+  dataFrom: { type: String },
   totalBeforeGST: Number,
   gstDetails: gstSchema,
   note: { type: String },
