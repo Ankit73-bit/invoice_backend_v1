@@ -59,7 +59,7 @@ const gstSchema = new mongoose.Schema(
 );
 
 const invoiceSchema = new mongoose.Schema({
-  invoiceNumber: {
+  invoiceNo: {
     type: String,
     required: true,
     unique: true,
@@ -112,7 +112,7 @@ const invoiceSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-invoiceSchema.index({ company: 1, invoiceNumber: 1 }, { unique: true });
+invoiceSchema.index({ company: 1, invoiceNo: 1 }, { unique: true });
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);
 export default Invoice;
