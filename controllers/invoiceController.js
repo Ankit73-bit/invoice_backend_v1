@@ -129,13 +129,16 @@ export const getNextInvoiceNumber = async (req, res) => {
 };
 
 export const getInvoices = catchAsync(async (req, res) => {
+  const companyId = req.query.companyId || req.user.company;
+
   const features = new APIFeatures(
-    Invoice.find({ company: req.user.company })
+    Invoice.find({ company: companyId })
       .populate("client")
       .populate("consignee")
       .populate("company"),
     req.query
   )
+
     .filter()
     .sort()
     .limitFields()
@@ -150,11 +153,20 @@ export const getInvoices = catchAsync(async (req, res) => {
   });
 });
 
-export const getAllInvoices = catchAsync(async (req, res, next) => {
-  const { skip, limit } = req.pagination;
+export const getAllInvoices = catchAsync(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  const filter = req.query.companyId
+    ? { company: new mongoose.Types.ObjectId(req.query.companyId) }
+    : {};
 
   const features = new APIFeatures(
-    Invoice.find().populate("company").populate("client").populate("consignee"),
+    Invoice.find(filter)
+      .populate("company")
+      .populate("client")
+      .populate("consignee"),
     req.query
   )
     .filter()
@@ -162,14 +174,20 @@ export const getAllInvoices = catchAsync(async (req, res, next) => {
     .limitFields();
 
   const totalCount = await features.query.clone().countDocuments();
+
   const invoices = await features.query.skip(skip).limit(limit);
 
   res.status(200).json({
     status: "success",
     results: totalCount,
     data: invoices,
+    pagination: {
+      page,
+      limit,
+      total: totalCount,
+      pages: Math.ceil(totalCount / limit),
+    },
   });
-  next();
 });
 
 export const getInvoice = catchAsync(async (req, res, next) => {

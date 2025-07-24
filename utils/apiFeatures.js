@@ -1,6 +1,7 @@
 export default class APIFeatures {
   constructor(query, queryString) {
-    (this.query = query), (this.queryString = queryString);
+    this.query = query;
+    this.queryString = queryString;
   }
 
   filter() {
@@ -8,10 +9,31 @@ export default class APIFeatures {
     const excludedFields = ["page", "sort", "limit", "fields"];
     excludedFields.forEach((el) => delete queryObj[el]);
 
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    // 🔥 FIX: Remove empty strings, undefined, and null values
+    Object.keys(queryObj).forEach((key) => {
+      if (
+        queryObj[key] === "" ||
+        queryObj[key] === "undefined" ||
+        queryObj[key] === undefined ||
+        queryObj[key] === null
+      ) {
+        delete queryObj[key];
+      }
+    });
 
-    this.query = this.query.find(JSON.parse(queryStr));
+    // 🔥 FIX: Only apply filter if there are actual filter parameters
+    if (Object.keys(queryObj).length > 0) {
+      let queryStr = JSON.stringify(queryObj);
+      queryStr = queryStr.replace(
+        /\b(gte|gt|lte|lt)\b/g,
+        (match) => `$${match}`
+      );
+
+      console.log("🔍 APIFeatures applying filter:", JSON.parse(queryStr));
+      this.query = this.query.find(JSON.parse(queryStr));
+    } else {
+      console.log("🔍 APIFeatures: No filters to apply");
+    }
 
     return this;
   }
@@ -23,7 +45,6 @@ export default class APIFeatures {
     } else {
       this.query = this.query.sort("-createdAt");
     }
-
     return this;
   }
 
@@ -34,7 +55,6 @@ export default class APIFeatures {
     } else {
       this.query = this.query.select("-__v");
     }
-
     return this;
   }
 
@@ -44,7 +64,6 @@ export default class APIFeatures {
     const skip = (page - 1) * limit;
 
     this.query = this.query.skip(skip).limit(limit);
-
     return this;
   }
 }
