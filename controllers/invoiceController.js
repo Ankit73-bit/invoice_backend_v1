@@ -205,10 +205,6 @@ export const getInvoice = catchAsync(async (req, res, next) => {
     return next(new AppError("Invoice not found", 404));
   }
 
-  // Calculate payment status
-  const paymentStatus = calculatePaymentStatus(invoice);
-  invoice.paymentStatus = paymentStatus;
-
   res.status(200).json({
     status: "success",
     data: invoice,

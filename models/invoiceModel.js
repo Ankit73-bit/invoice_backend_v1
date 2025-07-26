@@ -6,7 +6,7 @@ const itemSchema = new mongoose.Schema({
     required: [true, "Item description is required"],
     trim: true,
   },
-  hsncode: String,
+  hsnCode: String,
   quantity: {
     type: Number,
     min: [0, "Quantity must be 0 or more"],
@@ -64,7 +64,7 @@ const invoiceSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  invoiceDate: {
+  date: {
     type: Date,
     default: Date.now,
     required: [true, "A Invoice must have invoice date"],

@@ -1,4 +1,5 @@
 import Invoice from "../models/invoiceModel.js";
+import mongoose from "mongoose";
 
 export const getInvoiceSummary = async (req, res) => {
   try {
