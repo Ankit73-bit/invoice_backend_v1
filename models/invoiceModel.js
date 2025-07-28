@@ -86,7 +86,7 @@ const invoiceSchema = new mongoose.Schema({
   items: [itemSchema],
   details: detailsSchema,
   hrDescription: {
-    year: { type: Number },
+    year: { type: String },
     month: { type: String },
     hrCode: { type: String },
     hrName: { type: String },
