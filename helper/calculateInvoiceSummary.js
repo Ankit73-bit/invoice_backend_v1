@@ -1,6 +1,6 @@
 const round2 = (num) => Math.round(num * 100) / 100;
 
-export function calculateInvoiceSummary({
+export default function calculateInvoiceSummary({
   items = [],
   gstType = "None", // "CGST", "SGST", "IGST", "None"
   cgstRate = 0,

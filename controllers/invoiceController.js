@@ -1,6 +1,6 @@
-import { calculateInvoiceSummary } from "../helper/calculateInvoiceSummary.js";
-import { convertToWords } from "../helper/convertToWords.js";
-import { getCurrentFinancialYear } from "../helper/services.js";
+import calculateInvoiceSummary from "../helper/calculateInvoiceSummary.js";
+import convertToWords from "../helper/convertToWords.js";
+import getCurrentFinancialYear from "../helper/services.js";
 import Company from "../models/companyModel.js";
 import Invoice from "../models/invoiceModel.js";
 import APIFeatures from "../utils/apiFeatures.js";

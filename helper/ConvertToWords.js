@@ -1,4 +1,4 @@
-export function convertToWords(amount) {
+export default function convertToWords(amount) {
   const units = [
     "",
     "One",

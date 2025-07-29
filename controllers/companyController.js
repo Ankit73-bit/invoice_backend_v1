@@ -1,4 +1,4 @@
-import { getCurrentFinancialYear } from "../helper/services.js";
+import getCurrentFinancialYear from "../helper/services.js";
 import Company from "../models/companyModel.js";
 
 export const createCompany = async (req, res, next) => {

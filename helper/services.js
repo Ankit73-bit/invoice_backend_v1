@@ -1,4 +1,4 @@
-export function getCurrentFinancialYear() {
+export default function getCurrentFinancialYear() {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth(); // 0-indexed (Jan = 0)
