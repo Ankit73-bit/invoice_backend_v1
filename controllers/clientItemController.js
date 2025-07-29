@@ -5,14 +5,22 @@ export const getClientItems = async (req, res) => {
   try {
     const { clientId } = req.params;
     const { companyId } = req.user;
+    const { category } = req.query; // Add category filter
 
-    const items = await ClientItem.find({
+    const query = {
       clientId,
       companyId,
       isActive: true,
-    })
+    };
+
+    // Add category filter if provided
+    if (category && category !== "all") {
+      query.category = category;
+    }
+
+    const items = await ClientItem.find(query)
       .populate("clientId")
-      .sort({ createdAt: -1 });
+      .sort({ category: 1, createdAt: -1 }); // Sort by category first, then by creation date
 
     res.json({
       success: true,
@@ -29,11 +37,11 @@ export const getClientItems = async (req, res) => {
   }
 };
 
-// Get all items for all clients (with pagination)
+// Get all items for all clients (with pagination and category filter)
 export const getAllClientItems = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, category } = req.query;
 
     const query = {
       companyId,
@@ -45,12 +53,18 @@ export const getAllClientItems = async (req, res) => {
       query.$or = [
         { description: { $regex: search, $options: "i" } },
         { hsnCode: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
       ];
+    }
+
+    // Add category filter
+    if (category && category !== "all") {
+      query.category = category;
     }
 
     const items = await ClientItem.find(query)
       .populate("clientId")
-      .sort({ createdAt: -1 })
+      .sort({ category: 1, createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
@@ -75,10 +89,101 @@ export const getAllClientItems = async (req, res) => {
   }
 };
 
+// Get all categories for a specific client
+export const getClientItemCategories = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const { companyId } = req.user;
+
+    const categories = await ClientItem.distinct("category", {
+      clientId,
+      companyId,
+      isActive: true,
+    });
+
+    res.json({
+      success: true,
+      data: categories.sort(),
+    });
+  } catch (error) {
+    console.error("Error fetching client item categories:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch categories",
+      error: error.message,
+    });
+  }
+};
+
+// Get all categories for all clients in a company
+export const getAllCategories = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+
+    const categories = await ClientItem.distinct("category", {
+      companyId,
+      isActive: true,
+    });
+
+    res.json({
+      success: true,
+      data: categories.sort(),
+    });
+  } catch (error) {
+    console.error("Error fetching all categories:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch categories",
+      error: error.message,
+    });
+  }
+};
+
+// Get items grouped by category for a specific client
+export const getClientItemsByCategory = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const { companyId } = req.user;
+
+    const items = await ClientItem.find({
+      clientId,
+      companyId,
+      isActive: true,
+    })
+      .populate("clientId")
+      .sort({ category: 1, createdAt: -1 });
+
+    // Group items by category
+    const groupedItems = items.reduce((acc, item) => {
+      const category = item.category || "Uncategorized";
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(item);
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      data: groupedItems,
+      categories: Object.keys(groupedItems).sort(),
+      totalItems: items.length,
+    });
+  } catch (error) {
+    console.error("Error fetching client items by category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch client items by category",
+      error: error.message,
+    });
+  }
+};
+
 // Create a new client item
 export const createClientItem = async (req, res) => {
   try {
-    const { clientId, description, unitPrice, hsnCode, company } = req.body;
+    const { clientId, description, unitPrice, hsnCode, company, category } =
+      req.body;
     const { _id: userId } = req.user;
 
     // Check if item with same description already exists for this client
@@ -102,6 +207,7 @@ export const createClientItem = async (req, res) => {
       unitPrice,
       hsnCode,
       company,
+      category: category || "General", // Default category if not provided
       createdBy: userId,
     });
 
@@ -127,7 +233,7 @@ export const createClientItem = async (req, res) => {
 export const updateClientItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { description, unitPrice, hsnCode } = req.body;
+    const { description, unitPrice, hsnCode, category } = req.body;
     const { companyId } = req.user;
 
     const clientItem = await ClientItem.findOne({
@@ -164,6 +270,9 @@ export const updateClientItem = async (req, res) => {
     clientItem.description = description;
     clientItem.unitPrice = unitPrice;
     clientItem.hsnCode = hsnCode;
+    if (category) {
+      clientItem.category = category;
+    }
 
     await clientItem.save();
     await clientItem.populate("clientId");
