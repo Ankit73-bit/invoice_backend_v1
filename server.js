@@ -15,7 +15,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://paras-invoice-tau.vercel.app"], // change this to your frontend URL in prod
+    origin: ["http://localhost:5173", "https://paras-invoice-two.vercel.app"], // change this to your frontend URL in prod
     credentials: true, // if using cookies/auth headers
   })
 );
