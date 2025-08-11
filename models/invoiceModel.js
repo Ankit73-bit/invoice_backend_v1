@@ -27,6 +27,7 @@ const detailsSchema = new mongoose.Schema(
     purchaseNo: { type: String },
     purchaseDate: { type: Date },
     termsOfDelivery: { type: String },
+    dueDate: { type: String },
     dispatchDetails: {
       dispatchNo: { type: String },
       date: { type: Date },

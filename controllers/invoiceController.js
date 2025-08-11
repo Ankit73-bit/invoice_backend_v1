@@ -131,20 +131,62 @@ export const getNextInvoiceNumber = async (req, res) => {
 export const getInvoices = catchAsync(async (req, res) => {
   const companyId = req.query.companyId || req.user.company;
 
-  const features = new APIFeatures(
-    Invoice.find({ company: companyId })
-      .populate("client")
-      .populate("consignee")
-      .populate("company"),
-    req.query
-  )
+  const matchStage = { company: new mongoose.Types.ObjectId(companyId) };
 
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: "clients",
+        localField: "client",
+        foreignField: "_id",
+        as: "client",
+      },
+    },
+    { $unwind: "$client" },
+    {
+      $lookup: {
+        from: "companies",
+        localField: "company",
+        foreignField: "_id",
+        as: "company",
+      },
+    },
+    { $unwind: "$company" },
+  ];
 
-  const invoices = await features.query;
+  // Search filter
+  if (req.query.search) {
+    const searchRegex = new RegExp(req.query.search, "i");
+    pipeline.push({
+      $match: {
+        $or: [
+          { invoiceNo: searchRegex },
+          { "client.clientCompanyName": searchRegex },
+          { "company.companyName": searchRegex },
+        ],
+      },
+    });
+  }
+
+  // Sorting
+  if (req.query.sort) {
+    const sortFields = {};
+    req.query.sort.split(",").forEach((field) => {
+      sortFields[field] = 1;
+    });
+    pipeline.push({ $sort: sortFields });
+  } else {
+    pipeline.push({ $sort: { createdAt: -1 } });
+  }
+
+  // Pagination
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+  pipeline.push({ $skip: skip }, { $limit: limit });
+
+  const invoices = await Invoice.aggregate(pipeline);
 
   res.status(200).json({
     status: "success",
@@ -170,6 +212,7 @@ export const getAllInvoices = catchAsync(async (req, res) => {
     req.query
   )
     .filter()
+    .search()
     .sort()
     .limitFields();
 

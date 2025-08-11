@@ -186,20 +186,20 @@ export const createClientItem = async (req, res) => {
       req.body;
     const { _id: userId } = req.user;
 
-    // Check if item with same description already exists for this client
-    const existingItem = await ClientItem.findOne({
-      clientId,
-      company,
-      description: { $regex: new RegExp(`^${description}$`, "i") },
-      isActive: true,
-    });
+    // // Check if item with same description already exists for this client
+    // const existingItem = await ClientItem.findOne({
+    //   clientId,
+    //   company,
+    //   description: { $regex: new RegExp(`^${description}$`, "i") },
+    //   isActive: true,
+    // });
 
-    if (existingItem) {
-      return res.status(400).json({
-        success: false,
-        message: "Item with this description already exists for this client",
-      });
-    }
+    // if (existingItem) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Item with this description already exists for this client",
+    //   });
+    // }
 
     const clientItem = new ClientItem({
       clientId,

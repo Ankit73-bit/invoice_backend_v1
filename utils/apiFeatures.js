@@ -62,4 +62,18 @@ export default class APIFeatures {
     this.query = this.query.skip(skip).limit(limit);
     return this;
   }
+
+  search() {
+    if (this.queryString.search) {
+      const searchRegex = new RegExp(this.queryString.search, "i");
+      this.query = this.query.find({
+        $or: [
+          { invoiceNo: searchRegex },
+          { "client.clientCompanyName": searchRegex },
+          { "company.companyName": searchRegex },
+        ],
+      });
+    }
+    return this;
+  }
 }

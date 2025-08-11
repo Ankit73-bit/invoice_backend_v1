@@ -1,22 +1,21 @@
 import Client from "../models/clientModel.js";
 
-// export const getAllClients = async (req, res) => {
-//   const filter =
-//     req.user.role === "admin" && req.query.companyId
-//       ? { company: req.query.companyId }
-//       : { company: req.user.company };
-
-//   const clients = await Client.find(filter);
-//   res.status(200).json({ status: "success", data: clients });
-// };
-
 export const getAllClients = async (req, res) => {
-  const filter =
-    req.user.role === "admin" && req.query.companyId
-      ? { company: req.query.companyId }
-      : { company: req.user.company };
+  let filter = {};
+
+  if (req.user.role === "admin") {
+    // If admin provided a companyId → filter by that company
+    if (req.query.companyId) {
+      filter.company = req.query.companyId;
+    }
+    // else: no filter → all companies' clients
+  } else {
+    // Non-admin → restrict to their own company
+    filter.company = req.user.company;
+  }
 
   const clients = await Client.find(filter).populate("company", "companyName");
+
   res.status(200).json({ status: "success", data: clients });
 };
 
