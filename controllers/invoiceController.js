@@ -153,6 +153,15 @@ export const getInvoices = catchAsync(async (req, res) => {
       },
     },
     { $unwind: "$company" },
+    {
+      $lookup: {
+        from: "consignees",
+        localField: "consignee",
+        foreignField: "_id",
+        as: "consignee",
+      },
+    },
+    { $unwind: { path: "$consignee", preserveNullAndEmptyArrays: true } },
   ];
 
   // Search filter
