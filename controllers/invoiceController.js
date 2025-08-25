@@ -13,11 +13,7 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     client,
     consignee,
     items,
-    gstType,
-    cgstRate,
-    sgstRate,
-    igstRate,
-    fuelSurchargeRate,
+    gstDetails = {}, // Accept gstDetails object instead of individual fields
     roundingOff = 0,
     ...rest
   } = req.body;
@@ -62,10 +58,19 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     company.invoiceCounter
   ).padStart(3, "0")}`;
 
+  // Extract GST details from the request with defaults
+  const {
+    type: gstType = "None",
+    cgstRate = 0,
+    sgstRate = 0,
+    igstRate = 0,
+    fuelSurchargeRate = 0,
+  } = gstDetails;
+
   const {
     items: updatedItems,
     totalBeforeGST,
-    gstDetails,
+    gstDetails: calculatedGstDetails,
     grossAmount,
   } = calculateInvoiceSummary({
     items,
@@ -74,7 +79,6 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     sgstRate,
     igstRate,
     fuelSurchargeRate,
-    roundingOff,
   });
 
   const amountInWords = convertToWords(grossAmount);
@@ -88,10 +92,11 @@ export const createInvoice = catchAsync(async (req, res, next) => {
     invoiceNo,
     financialYear: currentFY,
     totalBeforeGST,
-    gstDetails,
-    roundingOff,
+    gstDetails: calculatedGstDetails,
+    roundingOff: calculatedGstDetails.roundingOff || roundingOff,
     grossAmount,
     inWords: amountInWords,
+    createdBy: req.user._id,
     ...rest,
   });
 
@@ -264,10 +269,50 @@ export const getInvoice = catchAsync(async (req, res, next) => {
 });
 
 export const updateInvoice = catchAsync(async (req, res, next) => {
-  const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const { id } = req.params;
+  const { items, gstDetails = {}, roundingOff = 0, ...updateData } = req.body;
+
+  let calculatedData = {};
+
+  if (items) {
+    // Extract GST details from the request with defaults
+    const {
+      type: gstType = "None",
+      cgstRate = 0,
+      sgstRate = 0,
+      igstRate = 0,
+      fuelSurchargeRate = 0,
+    } = gstDetails;
+
+    const {
+      items: updatedItems,
+      totalBeforeGST,
+      gstDetails: calculatedGstDetails,
+      grossAmount,
+    } = calculateInvoiceSummary({
+      items,
+      gstType,
+      cgstRate,
+      sgstRate,
+      igstRate,
+      fuelSurchargeRate,
+    });
+
+    calculatedData = {
+      items: updatedItems,
+      totalBeforeGST,
+      gstDetails: calculatedGstDetails,
+      grossAmount,
+      inWords: convertToWords(grossAmount),
+      roundingOff: calculatedGstDetails.roundingOff || roundingOff,
+    };
+  }
+
+  const invoice = await Invoice.findByIdAndUpdate(
+    id,
+    { ...updateData, ...calculatedData },
+    { new: true, runValidators: true }
+  ).populate("company client consignee");
 
   if (!invoice) {
     return next(new AppError("Invoice not found", 404));

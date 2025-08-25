@@ -17,6 +17,7 @@ const itemSchema = new mongoose.Schema({
     required: [true, "Item total is required"],
     min: [0, "Item total must be 0 or more"],
   },
+  applyGST: { type: Boolean, default: true }, // ✅ new field
 });
 
 const detailsSchema = new mongoose.Schema(

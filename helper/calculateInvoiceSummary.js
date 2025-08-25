@@ -9,6 +9,8 @@ export default function calculateInvoiceSummary({
   fuelSurchargeRate = 0,
 }) {
   let totalBeforeGST = 0;
+  let taxableAmount = 0;
+  let nonTaxableAmount = 0;
 
   const updatedItems = items.map((item) => {
     const total =
@@ -18,35 +20,46 @@ export default function calculateInvoiceSummary({
         : 0);
 
     totalBeforeGST += total;
-    return { ...item, total };
+
+    // Set default applyGST to true if not specified
+    const applyGST = item.applyGST !== false;
+
+    if (applyGST) {
+      taxableAmount += total;
+    } else {
+      nonTaxableAmount += total;
+    }
+
+    return { ...item, total, applyGST };
   });
 
   totalBeforeGST = round2(totalBeforeGST);
+  taxableAmount = round2(taxableAmount);
+  nonTaxableAmount = round2(nonTaxableAmount);
 
   let cgst = 0,
     sgst = 0,
     igst = 0,
     fuelSurcharge = 0;
 
+  // Apply GST only to taxable items
   if (gstType === "CGST" || gstType === "SGST") {
-    cgst = round2((cgstRate / 100) * totalBeforeGST);
-    sgst = round2((sgstRate / 100) * totalBeforeGST);
+    cgst = round2((cgstRate / 100) * taxableAmount);
+    sgst = round2((sgstRate / 100) * taxableAmount);
   } else if (gstType === "IGST") {
-    igst = round2((igstRate / 100) * totalBeforeGST);
+    igst = round2((igstRate / 100) * taxableAmount);
   }
 
   if (fuelSurchargeRate > 0) {
-    fuelSurcharge = round2((fuelSurchargeRate / 100) * totalBeforeGST);
+    fuelSurcharge = round2((fuelSurchargeRate / 100) * taxableAmount);
   }
 
   // Calculate totalAmount before rounding
-  const totalAmount = round2(
-    totalBeforeGST + cgst + sgst + igst + fuelSurcharge
-  );
+  const totalGSTAmount = round2(cgst + sgst + igst + fuelSurcharge);
+  const totalAmount = round2(totalBeforeGST + totalGSTAmount);
 
   const decimalPart = totalAmount % 1;
   let roundingOff = decimalPart < 0.5 ? -decimalPart : 1 - decimalPart;
-
   roundingOff = parseFloat(roundingOff.toFixed(2));
 
   const grossAmount = round2(totalAmount + roundingOff);
@@ -54,6 +67,8 @@ export default function calculateInvoiceSummary({
   return {
     items: updatedItems,
     totalBeforeGST,
+    taxableAmount, // Added for reference
+    nonTaxableAmount, // Added for reference
     gstDetails: {
       type: gstType,
       cgstRate,
@@ -64,7 +79,8 @@ export default function calculateInvoiceSummary({
       igst,
       fuelSurchargeRate,
       fuelSurcharge,
-      totalAmount,
+      totalGSTAmount, // Added this field
+      totalAmount: grossAmount, // This should be the final gross amount
     },
     roundingOff,
     grossAmount,
