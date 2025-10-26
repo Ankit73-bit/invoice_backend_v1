@@ -13,10 +13,21 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://paras-invoice-two.vercel.app",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://paras-invoice-two.vercel.app"], // change this to your frontend URL in prod
-    credentials: true, // if using cookies/auth headers
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
 
